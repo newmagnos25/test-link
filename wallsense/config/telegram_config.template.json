@@ -1,0 +1,28 @@
+{
+  "enabled": false,
+  "token": "SEU_BOT_TOKEN_AQUI",
+  "admin_chat_id": "SEU_CHAT_ID_AQUI",
+  "notifications": {
+    "motion_detected": true,
+    "system_startup": true,
+    "system_shutdown": false,
+    "calibration_complete": true,
+    "errors": true
+  },
+  "quiet_hours": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "07:00"
+  },
+  "rate_limit": {
+    "enabled": true,
+    "max_notifications_per_minute": 5,
+    "cooldown_seconds": 30
+  },
+  "message_format": {
+    "include_zone": true,
+    "include_rssi": false,
+    "include_confidence": true,
+    "include_timestamp": true
+  }
+}

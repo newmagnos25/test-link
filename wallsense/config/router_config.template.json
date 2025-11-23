@@ -1,0 +1,14 @@
+{
+  "scan_interval": 1.0,
+  "target_networks": [
+    "NOME_DA_SUA_REDE_WIFI"
+  ],
+  "detection_threshold": 10,
+  "sensitivity": 1.0,
+  "filter_order": 3,
+  "filter_cutoff": 0.1,
+  "history_size": 60,
+  "auto_calibrate": true,
+  "calibration_duration": 30,
+  "verbose_logging": false
+}
