@@ -1,0 +1,42 @@
+{
+  "zones": [
+    {
+      "id": "sala",
+      "name": "Sala de Estar",
+      "position": [0, 0],
+      "devices": [],
+      "description": "Área principal da casa"
+    },
+    {
+      "id": "quarto",
+      "name": "Quarto Principal",
+      "position": [1, 0],
+      "devices": [],
+      "description": "Quarto com cama"
+    },
+    {
+      "id": "cozinha",
+      "name": "Cozinha",
+      "position": [0, 1],
+      "devices": [],
+      "description": "Área de preparação de alimentos"
+    },
+    {
+      "id": "banheiro",
+      "name": "Banheiro",
+      "position": [1, 1],
+      "devices": [],
+      "description": "Banheiro principal"
+    },
+    {
+      "id": "corredor",
+      "name": "Corredor",
+      "position": [0.5, 0.5],
+      "devices": [],
+      "description": "Corredor de passagem"
+    }
+  ],
+  "grid_size": [2, 2],
+  "enable_zone_detection": true,
+  "zone_timeout": 300
+}

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WallSense Dashboard - Detecção de Movimento WiFi</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <style>
+        /* Animações customizadas */
+        @keyframes pulse-motion {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        .motion-detected {
+            animation: pulse-motion 1s ease-in-out infinite;
+        }
+
+        .zone-active {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+        }
+
+        .zone-inactive {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        /* Scroll suave para timeline */
+        .timeline-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .timeline-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .timeline-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-wifi text-blue-500 text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">WallSense</h1>
+                        <p class="text-sm text-gray-400">Detecção de Movimento via WiFi</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <!-- Status Connection -->
+                    <div class="flex items-center space-x-2">
+                        <div id="ws-status" class="w-3 h-3 rounded-full bg-gray-500"></div>
+                        <span id="ws-status-text" class="text-sm text-gray-400">Conectando...</span>
+                    </div>
+
+                    <!-- System Status -->
+                    <div id="system-status" class="px-4 py-2 bg-gray-700 rounded-lg">
+                        <i class="fas fa-circle text-gray-500 text-xs mr-2"></i>
+                        <span class="text-sm">Sistema Parado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Control Panel -->
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-sliders-h mr-2 text-blue-500"></i>
+                Painel de Controle
+            </h2>
+
+            <div class="flex flex-wrap gap-3">
+                <button onclick="calibrateSystem()" class="btn-primary">
+                    <i class="fas fa-crosshairs mr-2"></i>
+                    Calibrar Sistema
+                </button>
+
+                <button onclick="startMonitoring()" class="btn-success">
+                    <i class="fas fa-play mr-2"></i>
+                    Iniciar Monitoramento
+                </button>
+
+                <button onclick="stopMonitoring()" class="btn-danger">
+                    <i class="fas fa-stop mr-2"></i>
+                    Parar Monitoramento
+                </button>
+
+                <div class="flex items-center space-x-2 ml-auto">
+                    <label class="text-sm text-gray-400">Sensibilidade:</label>
+                    <input type="range" id="sensitivity-slider" min="0.5" max="2.0" step="0.1" value="1.0"
+                           class="w-32" onchange="updateSensitivity(this.value)">
+                    <span id="sensitivity-value" class="text-sm font-mono">1.0x</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Networks Card -->
+            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm uppercase tracking-wide">Redes WiFi</p>
+                        <p id="stat-networks" class="text-3xl font-bold mt-1">0</p>
+                    </div>
+                    <i class="fas fa-wifi text-4xl text-blue-200 opacity-50"></i>
+                </div>
+            </div>
+
+            <!-- Events Card -->
+            <div class="stat-card bg-gradient-to-br from-red-500 to-red-600">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-red-100 text-sm uppercase tracking-wide">Eventos</p>
+                        <p id="stat-events" class="text-3xl font-bold mt-1">0</p>
+                    </div>
+                    <i class="fas fa-bell text-4xl text-red-200 opacity-50"></i>
+                </div>
+            </div>
+
+            <!-- Scans Card -->
+            <div class="stat-card bg-gradient-to-br from-green-500 to-green-600">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm uppercase tracking-wide">Scans</p>
+                        <p id="stat-scans" class="text-3xl font-bold mt-1">0</p>
+                    </div>
+                    <i class="fas fa-radar text-4xl text-green-200 opacity-50"></i>
+                </div>
+            </div>
+
+            <!-- Uptime Card -->
+            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm uppercase tracking-wide">Uptime</p>
+                        <p id="stat-uptime" class="text-3xl font-bold mt-1">0s</p>
+                    </div>
+                    <i class="fas fa-clock text-4xl text-purple-200 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Zone Map -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-map-marked-alt mr-2 text-green-500"></i>
+                    Mapa de Zonas
+                </h2>
+
+                <div id="zone-map" class="grid grid-cols-2 gap-4">
+                    <!-- Zonas serão inseridas dinamicamente -->
+                </div>
+            </div>
+
+            <!-- RSSI Graph -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-chart-line mr-2 text-yellow-500"></i>
+                    Gráfico RSSI em Tempo Real
+                </h2>
+
+                <canvas id="rssi-chart" height="250"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Events Timeline -->
+            <div class="lg:col-span-2 bg-gray-800 rounded-lg shadow-xl p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-history mr-2 text-red-500"></i>
+                    Timeline de Eventos
+                </h2>
+
+                <div id="events-timeline" class="timeline-container space-y-3">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>Nenhum evento detectado ainda</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Networks List -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-network-wired mr-2 text-blue-500"></i>
+                    Redes Detectadas
+                </h2>
+
+                <div id="networks-list" class="space-y-2">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-search text-3xl mb-2"></i>
+                        <p class="text-sm">Aguardando scan...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-12 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+            <p>WallSense v1.0.0 - Sistema de Detecção de Movimento via WiFi</p>
+            <p class="mt-1">
+                <i class="fas fa-heart text-red-500"></i>
+                Desenvolvido com tecnologia de ponta
+            </p>
+        </div>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast-notification" class="fixed top-4 right-4 max-w-sm transform translate-x-full transition-transform duration-300 z-50">
+        <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl p-4">
+            <div class="flex items-center">
+                <div id="toast-icon" class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 mr-3">
+                    <i class="fas fa-info text-white"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 id="toast-title" class="font-bold text-white">Notificação</h4>
+                    <p id="toast-message" class="text-sm text-gray-300 mt-1">Mensagem</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tailwind Custom Styles -->
+    <style>
+        .btn-primary {
+            @apply px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors duration-200;
+        }
+
+        .btn-success {
+            @apply px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-colors duration-200;
+        }
+
+        .btn-danger {
+            @apply px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors duration-200;
+        }
+
+        .stat-card {
+            @apply rounded-lg shadow-xl p-6 text-white;
+        }
+    </style>
+
+    <!-- Custom JavaScript -->
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
